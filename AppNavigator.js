@@ -7,6 +7,10 @@ import RegisterScreen from './screens/RegisterScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import StockScreen from './screens/StockScreen';
 import AddItemScreen from './screens/AddItemScreen';
+import AddCompraScreen from './screens/AddCompraScreen';
+import AddMovementScreen from './screens/AddMovementScreen';
+import AddUserScreen from './screens/AddUserScreen';
+import AddDepoScreen from './screens/AddDepoScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import ManageUsersScreen from './screens/ManageUsersScreen';
 import ManageLocationsScreen from './screens/ManageLocationsScreen';
@@ -54,6 +58,34 @@ const AppNavigator = () => {
         name="AddItem"
         component={AddItemScreen}
         options={{ title: 'Añadir nuevo artículo' }}
+      />
+
+      {/* Pantalla para Registrar Compra */}
+      <Stack.Screen
+        name="AddCompra"
+        component={AddCompraScreen}
+        options={{ title: 'Registrar compra' }}
+      />
+
+      {/* Pantalla para Registrar Usuario */}
+      <Stack.Screen
+        name="AddUser"
+        component={AddUserScreen}
+        options={{ title: 'Registrar usuario' }}
+      />
+
+      {/* Pantalla para Registrar Movimiento */}
+      <Stack.Screen
+        name="AddMovement"
+        component={AddMovementScreen}
+        options={{ title: 'Registrar movimiento' }}
+      />
+
+      {/* Pantalla para Añadir Deposito */}
+      <Stack.Screen
+        name="AddDepo"
+        component={AddDepoScreen}
+        options={{ title: 'Añadir depósito' }}
       />
 
       {/* Pantalla de Configuración */}

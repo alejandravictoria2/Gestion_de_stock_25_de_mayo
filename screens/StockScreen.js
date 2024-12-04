@@ -78,6 +78,11 @@ const StockScreen = ({ navigation }) => {
     setModalVisible(true);
   };
 
+  // Obtener el nombre del deposito para cada producto
+  const getNombreDepositos = (codigo_deposito) => {
+    const deposito = deposits.find(dep => dep.codigo_deposito === codigo_deposito);
+    return deposito ? deposito.nombre : 'Desconocito';
+  }
   return (
     <SafeAreaView style={styles.container}>
         <ScreenHeader title="Inventario" navigation={navigation}/>
@@ -113,6 +118,7 @@ const StockScreen = ({ navigation }) => {
         <View style={styles.tableHeaderRow}>
           <Text style={styles.tableHeader}>Producto</Text>
           <Text style={styles.tableHeader}>Cantidad</Text>
+          <Text style={styles.tableHeader}>Unidad</Text>
           <Text style={styles.tableHeader}>Precio</Text>
           <Text style={styles.tableHeader}>Depósito</Text>
           <Text style={styles.tableHeader}>Acciones</Text>
@@ -129,13 +135,14 @@ const StockScreen = ({ navigation }) => {
               <Text
                 style={[
                   styles.tableCell,
-                  item.cantidad < item.stock_minimo && styles.lowStock,
+                  item.cantidad <= item.stock_minimo && styles.lowStock,
                 ]}
               >
                 {item.cantidad}
               </Text>
-              <Text style={styles.tableCell}>{item.precio*item.cantidad}</Text>
-              <Text style={styles.tableCell}>{item.codigo_deposito}</Text>
+              <Text style={styles.tableCell}>{item.unidad}</Text>
+              <Text style={styles.tableCell}>{'U$S ' + item.precio*item.cantidad}</Text>
+              <Text style={styles.tableCell}>{getNombreDepositos(item.codigo_deposito)}</Text>
               <View style={styles.actionsContainer}>
                 <TouchableOpacity onPress={() => confirmDeleteItem(item.id_producto)}>
                   <Icon name="delete" size={24} color="#D32F2F" />
@@ -152,33 +159,18 @@ const StockScreen = ({ navigation }) => {
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>{selectedProd.nombre}</Text>
-              <Text>Cantidad: {selectedProd.cantidad}</Text>
-              <Text>Precio unitario: {selectedProd.precio}</Text>
-              <Text>Precio total: {selectedProd.precio * selectedProd.cantidad}</Text>
-              <Text>Depósito: {selectedProd.codigo_deposito}</Text>
+              <Text style={styles.modalDetail}>Cantidad: {selectedProd.cantidad}</Text>
+              <Text style={styles.modalDetail}>Precio unitario: {selectedProd.precio}</Text>
+              <Text style={styles.modalDetail}>Precio total: {selectedProd.precio * selectedProd.cantidad}</Text>
+              <Text style={styles.modalDetail}>Depósito: {getNombreDepositos(selectedProd.codigo_deposito)}</Text>
               <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={styles.modalButton}
-                  onPress={() => {
-
-                  }}
-                >
+                <TouchableOpacity style={styles.modalButton} onPress={() => {}}>
                   <Text style={styles.modalButtonText}>Mover</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.modalButton}
-                  onPress={() => {
-
-                  }}
-                >
+                <TouchableOpacity style={styles.modalButton} onPress={() => {}}>
                   <Text style={styles.modalButtonText}>Modificar</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.modalButton}
-                  onPress={() => {
-                    setModalVisible(false)
-                  }}
-                >
+                <TouchableOpacity style={styles.modalButton} onPress={() => {setModalVisible(false)}}>
                   <Text style={styles.modalButtonText}>Cerrar</Text>
                 </TouchableOpacity>
               </View>
@@ -242,15 +234,17 @@ const styles = StyleSheet.create({
   },
   tableHeaderRow: {
     flexDirection: 'row',
-    backgroundColor: '#C8E6C9',
+    backgroundColor: '#4CAF50',
     padding: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
   tableHeader: {
     flex: 1,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#FFF',
     textAlign: 'center',
-    fontSize: 14,
+    fontSize: 12,
   },
   tableRow: {
     flexDirection: 'row',
@@ -258,11 +252,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#DDD',
+    borderBottomColor: '#E0E0E0',
   },
   tableCell: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 12,
     color: '#333',
     textAlign: 'center',
   },
@@ -270,32 +264,54 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
   },
   modalContent: {
     backgroundColor: '#FFF',
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 15,
     width: '80%',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
+    textAlign: 'center',
+    color: '#4CAF50',
   },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginTop: 20,
   },
+  modalDetail:{
+    fontSize: 16,
+    marginVertical: 5,
+    color: '#333',
+  },
+  modalButtons:{
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
   modalButton: {
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
     backgroundColor: '#4CAF50',
-    borderRadius: 5,
+    borderRadius: 10,
+    flex: 1,
+    marginHorizontal: 5,
+    alignItems: 'center',
   },
   modalButtonText: {
     color: '#FFF',
     fontWeight: 'bold',
+    fontSize: 11,
   },
   actionsContainer: {
     flexDirection: 'row',

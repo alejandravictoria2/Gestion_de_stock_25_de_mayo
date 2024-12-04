@@ -7,8 +7,8 @@ const AddItemScreen = ({ navigation }) => {
   // Estados para almacenar la información del nuevo ítem
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
-  const [min_stock, set_min_stock] = useState('')
-  const [max_stock, set_max_stock] = useState('')
+  const [unit, setUnit] = useState('');
+  const [min_stock, set_min_stock] = useState('');
   const [price, setPrice] = useState('');
   const [location, setLocation] = useState(''); //Depósito seleccionado
   const [locations, setLocations] = useState([]); //Lista de depósitos
@@ -36,7 +36,7 @@ const AddItemScreen = ({ navigation }) => {
 
   // Función para manejar el envío del formulario
   const handleAddItem = async () => {
-    if (!name || !quantity || !price || location === null || !min_stock || !max_stock) {
+    if (!name || !quantity || !price || location === null || !min_stock || !unit) {
       Alert.alert('Error', 'Por favor completa todos los campos.');
       return;
     }
@@ -45,8 +45,8 @@ const AddItemScreen = ({ navigation }) => {
       const newItem = {
         nombre: name,
         cantidad: parseInt(quantity,10),
+        unidad: unit,
         stock_minimo: parseInt(min_stock,10),
-        stock_maximo: parseInt(max_stock,10),
         precio: parseFloat(price),
         codigo_deposito: location,
       };
@@ -83,11 +83,10 @@ const AddItemScreen = ({ navigation }) => {
         keyboardType="numeric"
       />
       <TextInput
-        placeholder="Stock máximo"
-        value={max_stock}
-        onChangeText={set_max_stock}
+        placeholder="Unidad"
+        value={unit}
+        onChangeText={setUnit}
         style={styles.input}
-        keyboardType="numeric"
       />
       <TextInput
         placeholder="Precio"
