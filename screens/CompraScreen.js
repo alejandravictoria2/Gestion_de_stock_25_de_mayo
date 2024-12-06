@@ -2,11 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Modal } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 import ScreenHeader from '../components/ScreenHeader';
 import API from '../src/api/axios';
 
-const CompraScreen = ({ navigation }) => {
-
+const CompraScreen = ({}) => {
+  const navigation = useNavigation();
   const [data, setData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [detalleCompra, setDetalleCompra] = useState([]);
@@ -14,11 +15,13 @@ const CompraScreen = ({ navigation }) => {
   const [proveedores, setProveedores] = useState([]);
 
   useEffect(() => {
-    //Obtenemos los datos del backend
-    fetchCompras();
-    fetchDeposits();
-    fetchProveedor();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchCompras();
+      fetchDeposits();
+      fetchProveedor();
+    });
+    return unsubscribe; // Limpiar el listener cuando el componente se desmonte
+  }, [navigation]);
 
   const fetchCompras = async () =>{
     try{
@@ -142,12 +145,7 @@ const CompraScreen = ({ navigation }) => {
         </TouchableOpacity>
 
         {/* Modal para mostrar detalles de la compra */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
-      >
+      <Modal visible={modalVisible} animationType="slide" transparent={true} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Detalles de la Compra</Text>
@@ -162,14 +160,12 @@ const CompraScreen = ({ navigation }) => {
                 <View style={styles.detalleHeaderRow}>
                   <Text style={styles.detalleHeader}>Nombre</Text>
                   <Text style={styles.detalleHeader}>Cantidad</Text>
-                  <Text style={styles.detalleHeader}>Unidad</Text>
                   <Text style={styles.detalleHeader}>Precio</Text>
                 </View>
                 {(detalleCompra.detalleCompras || []).map((detalle) => (
                   <View key={detalle.idDetalle} style={styles.detalleRow}>
                     <Text style={styles.detalleCell}>{detalle.nombre}</Text>
-                    <Text style={styles.detalleCell}>{detalle.cantidad}</Text>
-                    <Text style={styles.detalleCell}>{detalle.unidad}</Text>
+                    <Text style={styles.detalleCell}>{detalle.cantidad} {detalle.unidad}</Text>
                     <Text style={styles.detalleCell}>{'U$S ' + detalle.precio.toFixed(2)*detalle.cantidad}</Text>
                   </View>
                 ))}

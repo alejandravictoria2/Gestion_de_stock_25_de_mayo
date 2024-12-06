@@ -27,15 +27,16 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Image source={require('../assets/logo-mini.jpeg')} style={styles.logo} />
-      <Text style={styles.title}>
-        Cooperativa de Servicios Públicos 25 de Mayo Ltda.
-      </Text>
+        {/* Logo de la aplicación */}
+        <Image source={require('../assets/logo.png')} style={styles.logo}/>
+        {/* Texto de Bienvenida */}
+        <Text style={styles.title}>¡Bienvenido a la Gestión de Inventario!</Text>
+        <Text style={styles.subtitle}>Administra tus inventarios de forma rápida y sencilla</Text>
 
       <View style={styles.inputContainer}>
         <Icon name="account" size={20} color="#4CAF50" style={styles.icon} />
         <TextInput
-          placeholder="Usuario"
+          placeholder="Legajo"
           value={username}
           onChangeText={setUsername}
           style={styles.input}
@@ -76,22 +77,28 @@ const LoginScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
     backgroundColor: '#E8F5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
   },
   logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 20,
+    width: 170,
+    height: 120,
+    marginBottom: 10,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 30,
-    textAlign: 'center',
+    fontSize: 26,
+    fontWeight: 'bold',
     color: '#4CAF50',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
   },
   inputContainer: {
     flexDirection: 'row',

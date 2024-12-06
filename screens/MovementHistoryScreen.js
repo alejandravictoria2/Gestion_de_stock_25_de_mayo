@@ -2,22 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, 
   TouchableOpacity, SafeAreaView, Modal, Alert, ScrollView } from 'react-native';
 import ScreenHeader from '../components/ScreenHeader';
+import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import API from '../src/api/axios'
 
-const MovementHistoryScreen = ({navigation}) => {
+const MovementHistoryScreen = ({}) => {
+  const navigation = useNavigation();
   const [movements, setMovements] = useState([]);
   const [filteredMovements, setFilteredMovements] = useState([]);
   const [deposits, setDeposits] = useState([]);
-  const [proveedor, setProveedor] = useState([]);
+  const [users, setUsers] = useState([]);
   const [filter, setFilter] = useState('Todos');
   const [selectedMovement, setSelectedMovement] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
-    fetchMovimientos();
-    fetchDeposits();
-  }, []);
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchMovimientos();
+      fetchDeposits();
+    });
+    return unsubscribe; // Limpiar el listener cuando el componente se desmonte
+  }, [navigation]);
 
   const fetchMovimientos = async () => {
     try{
@@ -87,8 +92,12 @@ const MovementHistoryScreen = ({navigation}) => {
       <View style={styles.textContainer}>
         <Text style={styles.movementType}>{item.tipoMovimiento}</Text>
         <Text style={styles.movementDetails}>
-          Desde: {getNombreDepositos(item.desde)}, Hacia: {getNombreDepositos(item.hasta)}
+          Desde: {getNombreDepositos(item.desde)}
         </Text>
+        <Text style={styles.movementDetails}>
+          Hacia: {getNombreDepositos(item.hasta)}
+        </Text>
+        <Text style={styles.movementDetails}>Usuario: {item.legajo}</Text>
         <Text style={styles.movementDate}>{item.fecha}</Text>
       </View>
     </TouchableOpacity>
@@ -105,7 +114,7 @@ const MovementHistoryScreen = ({navigation}) => {
             style={[styles.filterButton, filter === type && styles.activeFilter]}
             onPress={() => filterMovements(type)}
           >
-            <Text style={styles.filterText}>{type}</Text>
+            <Text style={[styles.filterText, filter === type && styles.activeFilterText]}>{type}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -140,23 +149,24 @@ const MovementHistoryScreen = ({navigation}) => {
                 <Text style={styles.modalText}>Desde: {getNombreDepositos(selectedMovement.desde)}</Text>
                 <Text style={styles.modalText}>Hacia: {getNombreDepositos(selectedMovement.hasta)}</Text>
                 <Text style={styles.modalText}>Fecha: {selectedMovement.fecha}</Text>
+                <Text style={styles.modalText}>Usuario: {selectedMovement.legajo}</Text>
                 <Text style={styles.modalText}>Detalles:</Text>
 
                 {/* Tabla de detalles */}
-            <ScrollView style={styles.detalleContainer}>
-                <View style={styles.detalleHeaderRow}>
-                  <Text style={styles.detalleHeader}>Producto</Text>
-                  <Text style={styles.detalleHeader}>Cantidad</Text>
-                  <Text style={styles.detalleHeader}>Total</Text>
-                </View>
-                {(selectedMovement.detalleMovimientos || []).map((detalle) => (
-                  <View key={detalle.idDetalle} style={styles.detalleRow}>
-                    <Text style={styles.detalleCell}>{detalle.idProducto}</Text>
-                    <Text style={styles.detalleCell}>{detalle.cantidad}</Text>
-                    <Text style={styles.detalleCell}>{'U$S ' + detalle.precioTotal.toFixed(2)}</Text>
-                  </View>
-                ))}
-              </ScrollView>
+                <ScrollView style={styles.detalleContainer}>
+                    <View style={styles.detalleHeaderRow}>
+                      <Text style={styles.detalleHeader}>Producto</Text>
+                      <Text style={styles.detalleHeader}>Cantidad</Text>
+                      <Text style={styles.detalleHeader}>Total</Text>
+                    </View>
+                    {(selectedMovement.detalleMovimientos || []).map((detalle) => (
+                      <View key={detalle.idDetalle} style={styles.detalleRow}>
+                        <Text style={styles.detalleCell}>{detalle.idProducto}</Text>
+                        <Text style={styles.detalleCell}>{detalle.cantidad}</Text>
+                        <Text style={styles.detalleCell}>{'U$S ' + detalle.precioTotal.toFixed(2)}</Text>
+                      </View>
+                    ))}
+                </ScrollView>
               </>
             )}
             <TouchableOpacity
@@ -196,6 +206,9 @@ const styles = StyleSheet.create({
   filterText: {
     color: '#4CAF50',
     fontWeight: 'bold',
+  },
+  activeFilterText:{
+    color: '#FFF',
   },
   movementRow: {
     flexDirection: 'row',

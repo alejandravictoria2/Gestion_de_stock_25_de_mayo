@@ -3,10 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Alert, StyleSheet, SafeAreaView, Modal } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ScreenHeader from '../components/ScreenHeader';
+import { useNavigation } from '@react-navigation/native';
 import { Picker } from '@react-native-picker/picker';
 import API from '../src/api/axios'
 
-const StockScreen = ({ navigation }) => {
+const StockScreen = ({  }) => {
+  const navigation = useNavigation();
   const [data, setData] = useState([]);
   const [deposits, setDeposits] = useState([]); //Lista de depósitos
   const [search, setSearch] = useState(''); // Estado para la búsqueda
@@ -15,10 +17,12 @@ const StockScreen = ({ navigation }) => {
   const [selectedProd, setSelecteProd] = useState(null);
 
   useEffect(() => {
-    //Obtenemos los datos del backend
-    fetchInventory();
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchInventory();
     fetchDeposits();
-  }, []);
+    });
+    return unsubscribe; // Limpiar el listener cuando el componente se desmonte
+  }, [navigation]);
 
   // Obtenemos la lista de depositos
   const fetchDeposits = async () =>{
@@ -56,7 +60,6 @@ const StockScreen = ({ navigation }) => {
   const deleteItem = async (itemId) => {
     try{
       const idAsLong = parseInt(itemId, 10);
-      console.log(itemId)
         await API.delete(`api/stock/${idAsLong}`);
         setData((prevData) => prevData.filter((item) => item.id !== itemId));
         Alert.alert('Éxito', 'Producto eliminado correctamente');
@@ -81,7 +84,7 @@ const StockScreen = ({ navigation }) => {
   // Obtener el nombre del deposito para cada producto
   const getNombreDepositos = (codigo_deposito) => {
     const deposito = deposits.find(dep => dep.codigo_deposito === codigo_deposito);
-    return deposito ? deposito.nombre : 'Desconocito';
+    return deposito ? deposito.nombre : 'Desconocido';
   }
   return (
     <SafeAreaView style={styles.container}>
@@ -118,10 +121,9 @@ const StockScreen = ({ navigation }) => {
         <View style={styles.tableHeaderRow}>
           <Text style={styles.tableHeader}>Producto</Text>
           <Text style={styles.tableHeader}>Cantidad</Text>
-          <Text style={styles.tableHeader}>Unidad</Text>
+          <Text style={styles.tableHeader}>Tipo</Text>
           <Text style={styles.tableHeader}>Precio</Text>
           <Text style={styles.tableHeader}>Depósito</Text>
-          <Text style={styles.tableHeader}>Acciones</Text>
         </View>
 
         {filteredData.length === 0 ? (
@@ -138,16 +140,11 @@ const StockScreen = ({ navigation }) => {
                   item.cantidad <= item.stock_minimo && styles.lowStock,
                 ]}
               >
-                {item.cantidad}
+                {item.cantidad} {item.unidad}
               </Text>
-              <Text style={styles.tableCell}>{item.unidad}</Text>
+              <Text style={styles.tableCell}>{item.tipo}</Text>
               <Text style={styles.tableCell}>{'U$S ' + item.precio*item.cantidad}</Text>
               <Text style={styles.tableCell}>{getNombreDepositos(item.codigo_deposito)}</Text>
-              <View style={styles.actionsContainer}>
-                <TouchableOpacity onPress={() => confirmDeleteItem(item.id_producto)}>
-                  <Icon name="delete" size={24} color="#D32F2F" />
-                </TouchableOpacity>
-              </View>
             </View>
           </TouchableOpacity>
         )))}
@@ -159,9 +156,9 @@ const StockScreen = ({ navigation }) => {
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>{selectedProd.nombre}</Text>
-              <Text style={styles.modalDetail}>Cantidad: {selectedProd.cantidad}</Text>
-              <Text style={styles.modalDetail}>Precio unitario: {selectedProd.precio}</Text>
-              <Text style={styles.modalDetail}>Precio total: {selectedProd.precio * selectedProd.cantidad}</Text>
+              <Text style={styles.modalDetail}>Cantidad: {selectedProd.cantidad} {selectedProd.unidad}</Text>
+              <Text style={styles.modalDetail}>Precio unitario: U$S {selectedProd.precio}</Text>
+              <Text style={styles.modalDetail}>Precio total: U$S {selectedProd.precio * selectedProd.cantidad}</Text>
               <Text style={styles.modalDetail}>Depósito: {getNombreDepositos(selectedProd.codigo_deposito)}</Text>
               <View style={styles.modalButtons}>
                 <TouchableOpacity style={styles.modalButton} onPress={() => {}}>
