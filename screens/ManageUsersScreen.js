@@ -71,7 +71,6 @@ const ManageUsersScreen = ({ navigation }) => {
         value={search}
         onChangeText={setSearch}
       />
-
       {/* Tabla de inventario */}
       <ScrollView style={styles.tableContainer}>
         <View style={styles.tableHeaderRow}>

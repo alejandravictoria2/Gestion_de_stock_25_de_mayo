@@ -21,6 +21,9 @@ const SettingsScreen = ({ navigation }) => {
       <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('ManageLocations')}>
         <Text style={styles.optionText}>Gestionar Depositos</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('ManageSuppliers')}>
+        <Text style={styles.optionText}>Gestion de proveedores</Text>
+      </TouchableOpacity>
     </View>
   );
 };

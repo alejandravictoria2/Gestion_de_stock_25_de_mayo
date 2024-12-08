@@ -1,20 +1,45 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, SafeAreaView, FlatList } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, 
+  Alert, SafeAreaView, FlatList, KeyboardAvoidingView, Platform, 
+  TouchableWithoutFeedback, Keyboard } from 'react-native';
 import API from '../src/api/axios';
 import { Picker } from '@react-native-picker/picker';
 
-const AddMovementeScreen = ({navigation}) => {
-  const [location, setLocation] = useState(''); //Depósito seleccionado
-  const [location2, setLocation2] = useState('');
+const AddMovementeScreen = ({route, navigation}) => {
+  const [location, setLocation] = useState(''); //Depósito de salida seleccionado
+  const [location2, setLocation2] = useState(''); //Depósito de destino seleccionado
   const [locations, setLocations] = useState([]); //Lista de depósitos
   const [stock, setStock] = useState([]);
   const [movementDetails, setMovementDetails] = useState([]);
   const [tipoMovimiento, setTipoMovimiento] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const quantityInputRef = useRef(null);
 
   useEffect(() =>{
     fetchLocations();
     fetchStock();
-  }, []);
+
+    //Obtener producto seleccionado de inventario
+    if(route.params?.product){
+      const{product,} = route.params;
+      const{codigo_deposito} = product;
+      setSelectedProduct(product);
+      const depositoEncontrado = locations.find(
+        (loc) => loc.codigo_deposito === codigo_deposito
+      );
+
+      if(depositoEncontrado){
+        setLocation(depositoEncontrado.codigo_deposito);
+      }
+
+      //Hacer foco en el producto seleccionado
+      if (selectedProduct) {
+        setTimeout(() => {
+          quantityInputRef.current?.focus();
+        }, 500);
+      }
+    }
+  }, [route.params, locations]);
 
   //Obtener depósitos
   const fetchLocations = async () =>{
@@ -114,80 +139,88 @@ const AddMovementeScreen = ({navigation}) => {
 
   return(
     <SafeAreaView style={styles.container}>
-        <View style={styles.pickerContainer}>
-            <Picker selectedValue={location} onValueChange={(itemValue) => {
-                setLocation(itemValue);
-            }}
-            style={styles.picker}
-            >
-                <Picker.Item label="Seleccione deposito de salida" value=""/>
-                {locations.map((loc) => (
-                <Picker.Item
-                    key={`${loc.codigo_deposito}-${loc.nombre}`}
-                    label={loc.nombre}
-                    value={loc.codigo_deposito}/>
-                ))}
-            </Picker>
-        </View>
-        <View style={styles.pickerContainer}>
-            <Picker
-            selectedValue={location2}
-            onValueChange={(itemValue) => {
-                setLocation2(itemValue);
-            }}
-            style={styles.picker}
-            >
-                <Picker.Item label="Seleccione destino" value=""/>
-                {locations.map((loc) => (
-                <Picker.Item
-                    key={`${loc.codigo_deposito}-${loc.nombre}`}
-                    label={loc.nombre}
-                    value={loc.codigo_deposito}/>
-                ))}
-            </Picker>
-        </View>
-        <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={tipoMovimiento}
-            onValueChange={setTipoMovimiento}
-            style={styles.picker}
-          >
-            <Picker.Item label="Seleccione tipo de movimiento" value="" />
-            <Picker.Item label="Entrada" value="Entrada" />
-            <Picker.Item label="Salida" value="Salida" />
-          </Picker>
-        </View>
-
-        <FlatList
-          data={stock}
-          keyExtractor={item => item.id_producto.toString()}
-          renderItem={({ item }) => (
-            item && (
-              <View style={styles.productContainer}>
-                <Text style={styles.productName}>{item.nombre}</Text>
-                <Text style={styles.productPrice}>Stock: {item.cantidad}{item.unidad}</Text>
-                <Text style={styles.productPrice}>
-                  Precio Unitario: ${item.precio?.toFixed(2) || 'N/A'}
-                </Text>
-                <TextInput
-                  style={styles.quantityInput}
-                  placeholder="Cantidad"
-                  keyboardType="numeric"
-                  onChangeText={quantity => {
-                    const parsedQuantity = parseInt(quantity, 10);
-                    if (!isNaN(parsedQuantity) && parsedQuantity >= 0) {
-                      addDetail(item.id_producto, parsedQuantity, item.precio);
-                    } else {
-                      Alert.alert('Error', 'Por favor ingresa una cantidad válida');
-                    }
+      <KeyboardAvoidingView style={{flex:1}}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <View style={{flex:1}}>
+              <View style={styles.pickerContainer}>
+                  <Picker selectedValue={location} onValueChange={(itemValue) => {
+                      setLocation(itemValue);
                   }}
-                />
+                  style={styles.picker}
+                  >
+                      <Picker.Item label="Seleccione deposito de salida" value=""/>
+                      {locations.map((loc) => (
+                      <Picker.Item
+                          key={`${loc.codigo_deposito}-${loc.nombre}`}
+                          label={loc.nombre}
+                          value={loc.codigo_deposito}/>
+                      ))}
+                  </Picker>
               </View>
-            ))}
-        />
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Registrar Movimiento</Text>
-        </TouchableOpacity>
+              <View style={styles.pickerContainer}>
+                  <Picker
+                  selectedValue={location2}
+                  onValueChange={(itemValue) => {
+                      setLocation2(itemValue);
+                  }}
+                  style={styles.picker}
+                  >
+                      <Picker.Item label="Seleccione destino" value=""/>
+                      {locations.map((loc) => (
+                      <Picker.Item
+                          key={`${loc.codigo_deposito}-${loc.nombre}`}
+                          label={loc.nombre}
+                          value={loc.codigo_deposito}/>
+                      ))}
+                  </Picker>
+              </View>
+              <View style={styles.pickerContainer}>
+                <Picker
+                  selectedValue={tipoMovimiento}
+                  onValueChange={setTipoMovimiento}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Seleccione tipo de movimiento" value="" />
+                  <Picker.Item label="Entrada" value="Entrada" />
+                  <Picker.Item label="Salida" value="Salida" />
+                </Picker>
+              </View>
+
+              <FlatList
+                data={stock}
+                keyExtractor={item => item.id_producto.toString()}
+                renderItem={({ item }) => (
+                  item && (
+                    <View style={styles.productContainer}>
+                      <Text style={styles.productName}>{item.nombre}</Text>
+                      <Text style={styles.productPrice}>Stock: {item.cantidad}{item.unidad}</Text>
+                      <Text style={styles.productPrice}>
+                        Precio Unitario: ${item.precio?.toFixed(2) || 'N/A'}
+                      </Text>
+                      <TextInput
+                        ref={selectedProduct?.id_producto === item.id_producto ? quantityInputRef : null}
+                        style={styles.quantityInput}
+                        placeholder="Cantidad"
+                        keyboardType="numeric"
+                        onChangeText={quantity => {
+                          const parsedQuantity = parseInt(quantity, 10);
+                          if (!isNaN(parsedQuantity) && parsedQuantity >= 0) {
+                            addDetail(item.id_producto, parsedQuantity, item.precio);
+                          } else {
+                            Alert.alert('Error', 'Por favor ingresa una cantidad válida');
+                          }
+                        }}
+                      />
+                    </View>
+                  ))}
+              />
+              <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+                <Text style={styles.buttonText}>Registrar Movimiento</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

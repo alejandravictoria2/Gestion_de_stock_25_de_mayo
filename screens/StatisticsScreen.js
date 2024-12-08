@@ -21,11 +21,11 @@ const StatisticsScreen = ({}) => {
 
   const fetchTopItems = async () => {
     try{
-      const response = await API.get('http://192.168.1.103:8080/api/stock/top5');
+      const response = await API.get('http://192.168.1.102:8080/api/stock/top5');
       const data = response.data;
 
       const formattedData = data.map(item =>({
-        name: item.nombre,
+        name: `${item.nombre} - (U$D ${(item.precio*item.cantidad).toFixed(2)})`,
         population: item.precio * item.cantidad,
         color: `rgba(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, 1)`,
         legendFontColor: '#7F7F7F',
@@ -63,18 +63,31 @@ const StatisticsScreen = ({}) => {
   return (
     <SafeAreaView style={styles.container}>
       <ScreenHeader title="Resumen" navigation={navigation}/>
-      <ScrollView>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Gráfico de Pastel */}
         <Text style={styles.chartTitle}>Artículos más valuados</Text>
-        <PieChart
-          data={pieData}
-          width={screenWidth - 20}
-          height={220}
-          chartConfig={chartConfig}
-          accessor="population"
-          backgroundColor="transparent"
-          style={styles.chart}
-          />
+        <View style={styles.centerContainer}>
+          <PieChart
+            data={pieData}
+            width={screenWidth - 20}
+            height={220}
+            chartConfig={chartConfig}
+            accessor="population"
+            backgroundColor="transparent"
+            style={styles.chart}
+            hasLegend={false}
+            />
+        
+          {/* Legendas */}
+          <View style={styles.legendContainer}>
+            {pieData.map((item, index) => (
+              <View key={index} style={styles.legendItem}>
+                <View style={[styles.colorBox, { backgroundColor: item.color }]} />
+                <Text style={styles.legendText}>{item.name}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -86,6 +99,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F5E9',
     marginTop: 44,
   },
+  scrollContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
   chartTitle: {
     fontSize: 18,
     color: '#4CAF50',
@@ -95,7 +112,29 @@ const styles = StyleSheet.create({
   chart: {
     marginVertical: 10,
     borderRadius: 10,
-    paddingLeft:10,
+  },
+  centerContainer: {
+    alignItems: 'center', // Centra el gráfico y leyendas horizontalmente
+    marginBottom: 20,
+  },
+  legendContainer:{
+    marginTop: 10,
+    paddingHorizontal: 10,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 5,
+  },
+  colorBox: {
+    width: 20,
+    height: 20,
+    marginRight: 10,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: 15,
+    color: '#4CAF50',
   }
 });
 

@@ -1,148 +1,256 @@
 // screens/ManageSuppliersScreen.js
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Modal, Alert, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import API from '../src/api/axios';
 
 const ManageSuppliersScreen = () => {
-  const [suppliers, setSuppliers] = useState([
-    { id: '1', name: 'Proveedor A', contact: '123456789', products: 'Transformadores, Cables' },
-    { id: '2', name: 'Proveedor B', contact: '987654321', products: 'Medidores, Fusibles' }
-  ]);
-  const [newSupplierName, setNewSupplierName] = useState('');
-  const [newSupplierContact, setNewSupplierContact] = useState('');
-  const [newSupplierProducts, setNewSupplierProducts] = useState('');
+  const [suppliers, setSuppliers] = useState([]);
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const [search, setSearch] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
 
-  const handleAddSupplier = () => {
-    if (!newSupplierName || !newSupplierContact || !newSupplierProducts) {
-      Alert.alert('Error', 'Por favor completa todos los campos.');
-      return;
+  useEffect(()=>{
+    fetchSuppliers();
+  },[]);
+
+  const fetchSuppliers = async () => {
+    try{
+      const response = await API.get('/api/proveedores');
+      if(Array.isArray(response.data)){
+        setSuppliers(response.data);
+      }else{
+        setSuppliers([]);
+      }
+    }catch(error){
+      Alert.alert('Error', 'No se pudo cargar el listado de usuarios');
+      setSuppliers([]);
     }
-    const newSupplier = {
-      id: `${suppliers.length + 1}`,
-      name: newSupplierName,
-      contact: newSupplierContact,
-      products: newSupplierProducts
-    };
-    setSuppliers([...suppliers, newSupplier]);
-    setNewSupplierName('');
-    setNewSupplierContact('');
-    setNewSupplierProducts('');
-    Alert.alert('Éxito', 'Proveedor agregado.');
   };
 
-  const handleDeleteSupplier = (id) => {
-    setSuppliers(suppliers.filter((supplier) => supplier.id !== id));
-    Alert.alert('Eliminado', 'Proveedor eliminado.');
+  // Confirmación para eliminar un producto
+  const confirmDeleteSupplier = (cuit) => {
+    Alert.alert(
+      'Confirmar eliminación',
+      '¿Estás seguro de que deseas eliminar este proveedor?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Eliminar', onPress: () => deleteSupplier(cuit), style: 'destructive' }
+      ]
+    );
+  };
+
+  // Función para eliminar un producto
+  const deleteSupplier = async (cuit) => {
+    try{
+        await API.delete(`api/proveedores/id`);
+        setSuppliers((prevData) => prevData.filter((proveedor) => proveedor.cuitProveedor !== cuit));
+        Alert.alert('Éxito', 'Proveedor eliminado correctamente');
+        fetchSuppliers(); //Cargamos nuevamente la tabla después de eliminar un producto
+    }catch(error){
+      Alert.alert('Error', 'No se pudo eliminar el proveedor');
+    }
+  };
+
+  const filteredData = Array.isArray(suppliers) ? suppliers.filter((supplier) =>
+    supplier.nombre.toLowerCase().includes((search || '').toLowerCase())
+  ) : [];
+
+  const handleSupplierClick=(supplier)=>{
+    setSelectedSupplier(supplier);
+    setModalVisible(true);
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Gestión de Proveedores</Text>
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="Nombre del Proveedor"
-          value={newSupplierName}
-          onChangeText={setNewSupplierName}
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Contacto"
-          value={newSupplierContact}
-          onChangeText={setNewSupplierContact}
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Productos que Ofrece"
-          value={newSupplierProducts}
-          onChangeText={setNewSupplierProducts}
-          style={styles.input}
-        />
-        <TouchableOpacity style={styles.addButton} onPress={handleAddSupplier}>
-          <Text style={styles.buttonText}>Agregar Proveedor</Text>
-        </TouchableOpacity>
-      </View>
-
-      <FlatList
-        data={suppliers}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.supplierRow}>
-            <Text style={styles.supplierText}>{item.name} - {item.contact}</Text>
-            <Text style={styles.supplierProducts}>Productos: {item.products}</Text>
-            <TouchableOpacity onPress={() => handleDeleteSupplier(item.id)}>
-              <Text style={styles.deleteButton}>Eliminar</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        ListEmptyComponent={<Text style={styles.emptyText}>No hay proveedores.</Text>}
+    <SafeAreaView style={styles.container}>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Buscar proveedor"
+        value={search}
+        onChangeText={setSearch}
       />
-    </View>
+      {/* Tabla de inventario */}
+      <ScrollView style={styles.tableContainer}>
+        <View style={styles.tableHeaderRow}>
+          <Text style={styles.tableHeader}>Cuit</Text>
+          <Text style={styles.tableHeader}>Nombre</Text>
+          <Text style={styles.tableHeader}>Direccion</Text>
+          <Text style={styles.tableHeader}>Acciones</Text>
+        </View>
+
+        {filteredData.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No hay proveedores disponibles</Text>
+          </View>
+        ):(
+          filteredData.map((supplier) => (
+            <TouchableOpacity key={supplier.cuitProveedor} onPress={() => handleSupplierClick(supplier)}>
+              <View key={supplier.cuitProveedor} style={styles.tableRow}>
+                <Text style={styles.tableCell}>{supplier.cuitProveedor}</Text>
+                <Text style={styles.tableCell}>{supplier.nombre}</Text>
+                <Text style={styles.tableCell}>{supplier.direccion}</Text>
+                <View style={styles.actionsContainer}>
+                  <TouchableOpacity onPress={() => confirmDeleteSupplier(supplier.cuitProveedor)}>
+                    <Icon name="delete" size={24} color="#D32F2F" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+        )))}
+      </ScrollView>
+
+      {/*Modal para detalles*/}
+      {selectedSupplier && (
+        <Modal visible={modalVisible} transparent={true} animationType="slide">
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>{selectedSupplier.nombre}</Text>
+                <Text>Legajo: {selectedSupplier.cuit}</Text>
+                <Text>Nombre: {selectedSupplier.nombre}</Text>
+                <Text>Apellido: {selectedSupplier.direccion}</Text>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={styles.modalButton}
+                    onPress={() => {
+
+                    }}
+                  >
+                    <Text style={styles.modalButtonText}>Modificar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.modalButton}
+                    onPress={() => {
+                      setModalVisible(false)
+                    }}
+                  >
+                    <Text style={styles.modalButtonText}>Cerrar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+        </Modal>
+      )}
+
+      {/*Botón flotante*/}
+      <TouchableOpacity
+      style={styles.floatingButton}
+      onPress={() => navigation.navigate('')}
+      >
+        <Icon name="plus" size={30} color="#FFF"/>
+      </TouchableOpacity>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: '#E8F5E9',
+    padding: 10,
   },
   header: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#4CAF50',
-    marginBottom: 20,
+    marginVertical: 20,
     textAlign: 'center',
   },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  input: {
+  searchInput: {
     height: 40,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 8,
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    margin: 10,
+    fontSize: 16,
+    color: '#333',
+  },
+  tableContainer: {
     paddingHorizontal: 10,
+    marginTop:10,
+  },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: '#C8E6C9',
+    padding: 10,
+  },
+  tableHeader: {
+    flex: 1,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    fontSize: 14,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#DDD',
+  },
+  tableCell: {
+    flex: 1,
+    fontSize: 14,
+    color: '#333',
+    textAlign: 'center',
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    flex: 1,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#FFF',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
     marginBottom: 10,
   },
-  addButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    alignItems: 'center',
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 20,
   },
-  buttonText: {
+  modalButton: {
+    padding: 10,
+    backgroundColor: '#4CAF50',
+    borderRadius: 5,
+  },
+  modalButtonText: {
     color: '#FFF',
     fontWeight: 'bold',
   },
-  supplierRow: {
-    backgroundColor: '#FFF',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
-    elevation: 2,
+  floatingButton:{
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#4CAF50',
+    borderRadius:50,
+    width:60,
+    height:60,
+    alignItems: 'center',
+    justifyContent:'center',
+    elevation: 5,
   },
-  supplierText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  supplierProducts: {
-    color: '#666',
-  },
-  deleteButton: {
-    color: '#D32F2F',
-    fontWeight: 'bold',
-    marginTop: 5,
+  emptyContainer:{
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
   },
   emptyText: {
-    textAlign: 'center',
+    fontSize: 16,
     color: '#888',
-    marginTop: 20,
+    fontStyle: 'Italic',
   },
 });
 

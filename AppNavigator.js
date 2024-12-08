@@ -3,10 +3,10 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import WelcomeScreen from './screens/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen';
-import RegisterScreen from './screens/RegisterScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import StockScreen from './screens/StockScreen';
 import AddItemScreen from './screens/AddItemScreen';
+import EditItemScreen from './screens/EditItemScreen';
 import AddCompraScreen from './screens/AddCompraScreen';
 import AddMovementScreen from './screens/AddMovementScreen';
 import AddUserScreen from './screens/AddUserScreen';
@@ -14,6 +14,7 @@ import AddDepoScreen from './screens/AddDepoScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import ManageUsersScreen from './screens/ManageUsersScreen';
 import ManageLocationsScreen from './screens/ManageLocationsScreen';
+import ManageSuppliersScreen from './screens/ManageSuppliersScreen';
 import StatisticsScreen from './screens/StatisticsScreen';
 import CompraScreen from './screens/CompraScreen';
 import MovementHistoryScreen from './screens/MovementHistoryScreen';
@@ -24,7 +25,7 @@ const Tab = createBottomTabNavigator();
 
 const AppNavigator = () => {
   return (
-    <Stack.Navigator initialRouteName="Welcome">
+    <Stack.Navigator initialRouteName="Login">
       {/* Pantalla de Bienvenida */}
       <Stack.Screen
         name="Welcome"
@@ -39,13 +40,6 @@ const AppNavigator = () => {
         options={{ title: 'Iniciar Sesión' }}
       />
 
-      {/* Pantalla de Registro de Usuario */}
-      <Stack.Screen
-        name="Register"
-        component={RegisterScreen}
-        options={{ title: 'Crear Usuario' }}
-      />
-
       {/* Pantalla de Recuperación de Contraseña */}
       <Stack.Screen
         name="ForgotPassword"
@@ -58,6 +52,13 @@ const AppNavigator = () => {
         name="AddItem"
         component={AddItemScreen}
         options={{ title: 'Añadir nuevo artículo' }}
+      />
+
+      {/* Pantalla para Editar Artículo */}
+      <Stack.Screen
+        name="EditItem"
+        component={EditItemScreen}
+        options={{ title: 'Modificar artículo' }}
       />
 
       {/* Pantalla para Registrar Compra */}
@@ -107,6 +108,13 @@ const AppNavigator = () => {
         name="ManageLocations"
         component={ManageLocationsScreen}
         options={{ title: 'Gestión de Depósitos' }}
+      />
+
+      {/* Pantalla de Gestión de Proveedores */}
+      <Stack.Screen
+        name="ManageSuppliers"
+        component={ManageSuppliersScreen}
+        options={{ title: 'Gestión de Proveedores' }}
       />
 
       {/* Pantalla Principal */}

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,
+  FlatList, KeyboardAvoidingView, Platform, ScrollView,
+ } from 'react-native';
 import API from '../src/api/axios';
 import { Picker } from '@react-native-picker/picker';
 
@@ -8,15 +10,31 @@ const AddItemScreen = ({ navigation }) => {
   const [name, setName] = useState('');
   const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('');
-  const [min_stock, set_min_stock] = useState('');
+  const [type, setType] = useState('');
   const [price, setPrice] = useState('');
+  const [min_stock, set_min_stock] = useState('');
   const [location, setLocation] = useState(''); //Depósito seleccionado
   const [locations, setLocations] = useState([]); //Lista de depósitos
+  const [suggestions, setSuggestions] = useState([]);
+  const [filteredSuggestions, setFilteredSuggestions] = useState([]);
 
   //Obtenemos los depósitos para cargar en la lista
   useEffect(() =>{
     fetchLocations();
   }, []);
+
+  const fetchSuggestions = async(query)=>{
+    if(query.length<2){
+      setFilteredSuggestions([]);
+      return;
+    }
+    try{
+        const response = await API.get(`/api/stock?nombre=${query}`)
+        setFilteredSuggestions(response.data);
+    }catch(error){
+      console.error('Error al obtener el listado de sugerencias', error);
+    }
+  }
 
   const fetchLocations = async () =>{
     try{
@@ -34,6 +52,29 @@ const AddItemScreen = ({ navigation }) => {
     }
   };
 
+  const filterSuggestions = (query, data) => {
+    const filtered = data.filter((item) =>
+      item.nombre.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredSuggestions(filtered);
+  };
+
+  const handleNameChange = (text) => {
+    setName(text);
+    fetchSuggestions(text);
+  };
+
+  const handleSuggestionSelect = (item) => {
+    setName(item.nombre);
+    setQuantity(item.cantidad.toString());
+    setUnit(item.unidad);
+    setType(item.tipo);
+    setPrice(item.precio.toString());
+    setLocation(item.codigo_deposito.toString());
+    set_min_stock(item.stock_minimo.toString());
+    setFilteredSuggestions([]); // Oculta las sugerencias al seleccionar una
+  }
+
   // Función para manejar el envío del formulario
   const handleAddItem = async () => {
     if (!name || !quantity || !price || location === null || !min_stock || !unit) {
@@ -42,17 +83,34 @@ const AddItemScreen = ({ navigation }) => {
     }
 
     try{
-      const newItem = {
-        nombre: name,
-        cantidad: parseInt(quantity,10),
-        unidad: unit,
-        stock_minimo: parseInt(min_stock,10),
-        precio: parseFloat(price),
-        codigo_deposito: location,
-      };
-      
-      await API.post('/api/stock', newItem);
-      Alert.alert('Exito', 'Producto agregado correctamente');
+      const response = await API.get(`/api/stock?nombre=${name}`);
+      const existingItems = response.data;
+      if(existingItems.length > 0){
+        // Si existe el artículo, se actualiza la cantidad
+        const existingItem = existingItems[0];
+        const updatedItem = {
+          ...existingItem,
+          cantidad: existingItem.cantidad + parseInt(quantity, 10),
+        };
+
+        await API.put(`/api/stock/${existingItem.id_producto}`, updatedItem);
+        Alert.alert('Exito', 'Producto actualizado correctamente');
+      }
+      else{
+
+        const newItem = {
+          nombre: name,
+          cantidad: parseInt(quantity,10),
+          unidad: unit,
+          tipo: type,
+          stock_minimo: parseInt(min_stock,10),
+          precio: parseFloat(price),
+          codigo_deposito: location,
+        };
+        
+        await API.post('/api/stock', newItem);
+        Alert.alert('Exito', 'Producto agregado correctamente');
+      }
       navigation.goBack(); //Regresamos a la pantalla anterior
     } catch(error){
       Alert.alert('Error', 'No se pudo agregar  el producto');
@@ -60,63 +118,95 @@ const AddItemScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Agregar Nuevo Artículo</Text>
-      <TextInput
-        placeholder="Nombre del Artículo"
-        value={name}
-        onChangeText={setName}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Cantidad"
-        value={quantity}
-        onChangeText={setQuantity}
-        style={styles.input}
-        keyboardType="numeric"
-      />
-      <TextInput
-        placeholder="Stock mínimo"
-        value={min_stock}
-        onChangeText={set_min_stock}
-        style={styles.input}
-        keyboardType="numeric"
-      />
-      <TextInput
-        placeholder="Unidad"
-        value={unit}
-        onChangeText={setUnit}
-        style={styles.input}
-      />
-      <TextInput
-        placeholder="Precio"
-        value={price}
-        onChangeText={setPrice}
-        style={styles.input}
-        keyboardType="numeric"
-      />
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={location}
-          onValueChange={(itemValue) => {
-            setLocation(itemValue);
-          }}
-          style={styles.picker}
-          >
-            <Picker.Item label="Selecciona un depósito" value=""/>
-            {locations.map((loc) => (
-              <Picker.Item
+    <KeyboardAvoidingView
+      style={{flex: 1}}
+      behavior={Platform.OS === 'ios' ? 'padding':'height'}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <View style={styles.container}>
+        <Text style={styles.label}>Nombre del artículo</Text>
+        <TextInput
+          placeholder="Nombre del Artículo"
+          value={name}
+          onChangeText={handleNameChange}
+          style={styles.input}
+        />
+        {filteredSuggestions.length > 0 && (
+          <FlatList
+            data={filteredSuggestions}
+            keyExtractor={(item) => item.id_producto.toString()}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.suggestionItem}
+                onPress={() => handleSuggestionSelect(item)}>
+                <Text style={styles.suggestionText}>{item.nombre}</Text>
+              </TouchableOpacity>
+            )}
+            style={styles.suggestionsList}
+          />
+        )}
+        <Text style={styles.label}>Cantidad</Text>
+        <TextInput
+          placeholder="Cantidad"
+          value={quantity}
+          onChangeText={setQuantity}
+          style={styles.input}
+          keyboardType="numeric"
+          />
+        <Text style={styles.label}>Stock mínimo</Text>
+        <TextInput
+          placeholder="Stock mínimo"
+          value={min_stock}
+          onChangeText={set_min_stock}
+          style={styles.input}
+          keyboardType="numeric"
+          />
+        <Text style={styles.label}>Unidad</Text>
+        <TextInput
+          placeholder="Unidad"
+          value={unit}
+          onChangeText={setUnit}
+          style={styles.input}
+          />
+        <Text style={styles.label}>Tipo</Text>
+        <TextInput
+          placeholder="Tipo"
+          value={type}
+          onChangeText={setType}
+          style={styles.input}
+          />
+        <Text style={styles.label}>Precio unitario</Text>
+        <TextInput
+          placeholder="Precio Unitario"
+          value={price}
+          onChangeText={setPrice}
+          style={styles.input}
+          keyboardType="numeric"
+          />
+        <Text style={styles.label}>Depósito</Text>
+        <View style={styles.pickerContainer}>
+          <Picker
+            selectedValue={location}
+            onValueChange={(itemValue) => {
+              setLocation(itemValue);
+            }}
+            style={styles.picker}
+            >
+              <Picker.Item label="Selecciona un depósito" value=""/>
+              {locations.map((loc) => (
+                <Picker.Item
                 key={`${loc.codigo_deposito}-${loc.nombre}`}
                 label={loc.nombre}
                 value={loc.codigo_deposito}/>
-            ))}
-          </Picker>
-      </View>
+              ))}
+            </Picker>
+        </View>
 
-      <TouchableOpacity style={styles.addButton} onPress={handleAddItem}>
-        <Text style={styles.addButtonText}>AGREGAR</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity style={styles.addButton} onPress={handleAddItem}>
+          <Text style={styles.addButtonText}>AGREGAR</Text>
+        </TouchableOpacity>
+      </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -127,37 +217,52 @@ const styles = StyleSheet.create({
     backgroundColor: '#E8F5E9',
     justifyContent: 'center',
   },
-  header: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  input: {
-    height: 50,
-    backgroundColor: '#FFF',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 15,
+  label: {
     fontSize: 16,
     color: '#333',
+    marginBottom: 5,
+  },
+  input: {
+    height: 40,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 10,
+    fontSize: 14,
+    color: '#333',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 2,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  suggestionsList: {
+    maxHeight: 150,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    borderColor: '#E5E7EB',
+    borderWidth: 1,
+    zIndex: 1,
+  },
+  suggestionItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  suggestionText: {
+    fontSize: 15,
+    color: '#111827',
   },
   pickerContainer:{
     backgroundColor: '#FFF',
-    borderRadius: 10,
+    borderRadius: 8,
     marginBottom: 15,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 2,
+    shadowRadius: 4,
+    elevation: 1,
   },
   picker:{
     height: 50,
@@ -167,18 +272,19 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: '#4CAF50',
-    paddingVertical: 15,
-    borderRadius: 10,
+    paddingVertical: 10,
+    borderRadius: 8,
     alignItems: 'center',
     shadowColor: '#2196F3',
-    shadowOffset: { width: 0, height: 5 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
+    shadowRadius: 4,
+    elevation: 3,
+    marginTop: 10,
   },
   addButtonText: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: 'bold',
   },
 });

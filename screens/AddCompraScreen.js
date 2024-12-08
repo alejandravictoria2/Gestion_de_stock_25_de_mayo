@@ -55,8 +55,8 @@ const AddCompraScreen = ({ navigation }) => {
     };
   
     const handleAddArticulo = () => {
-      const {nombre, cantidad, precioTotal, unidad} = nuevoProducto;
-      if(!nombre || !cantidad || !precioTotal || !unidad){
+      const {nombre, cantidad, precioTotal, tipo, unidad} = nuevoProducto;
+      if(!nombre || !cantidad || !precioTotal || !tipo || !unidad){
         Alert.alert('Error', 'Completa todos los campos del producto');
         return;
       }

@@ -1,6 +1,6 @@
 // screens/StockScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Alert, StyleSheet, SafeAreaView, Modal } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Alert, StyleSheet, SafeAreaView, Switch, Modal } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ScreenHeader from '../components/ScreenHeader';
 import { useNavigation } from '@react-navigation/native';
@@ -13,13 +13,17 @@ const StockScreen = ({  }) => {
   const [deposits, setDeposits] = useState([]); //Lista de depósitos
   const [search, setSearch] = useState(''); // Estado para la búsqueda
   const [selectedDepo, setSelectedDepo] = useState('ALL');
+  const [selectedType, setSelectedType] = useState('ALL');
+  const [lowStock, setLowStock] = useState(false);
+  const [types, setTypes] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProd, setSelecteProd] = useState(null);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchInventory();
-    fetchDeposits();
+      fetchDeposits();
+      fetchProductTypes();
     });
     return unsubscribe; // Limpiar el listener cuando el componente se desmonte
   }, [navigation]);
@@ -41,6 +45,16 @@ const StockScreen = ({  }) => {
       setData(response.data);
     }catch(error){
       Alert.alert('Error', 'No se pudo cargar el inventario');
+    }
+  };
+
+  // Obtener la lista de tipo de productos
+  const fetchProductTypes = async () => {
+    try{
+      const response = await API.get('/api/stock/types');
+      setTypes([{tipo: 'ALL', nombre: 'Todos'}, ...response.data]);
+    }catch(error){
+      Alert.alert('Error', 'No se pudo obtener la lista de tipo de productos')
     }
   };
 
@@ -73,6 +87,8 @@ const StockScreen = ({  }) => {
   const filteredData = data.filter((item) =>
     item.nombre.toLowerCase().includes(search.toLowerCase())
     && (selectedDepo === 'ALL' || item.codigo_deposito === selectedDepo)
+    && (selectedType === 'ALL' || item.tipo === selectedType)
+    && (!lowStock || item.cantidad <= item.stock_minimo)
   );
 
   // Seleccionar producto para ver detalles
@@ -81,11 +97,23 @@ const StockScreen = ({  }) => {
     setModalVisible(true);
   };
 
+  // Navegar a EditItem con el producto seleccionado
+  const navigateToEdit= () => {
+    navigation.navigate('EditItem', {product: selectedProd});
+    setModalVisible(false);
+  };
+
+  const navigateToMove = () => {
+    navigation.navigate('AddMovement', {product: selectedProd});
+    setModalVisible(false);
+  };
+
   // Obtener el nombre del deposito para cada producto
   const getNombreDepositos = (codigo_deposito) => {
     const deposito = deposits.find(dep => dep.codigo_deposito === codigo_deposito);
     return deposito ? deposito.nombre : 'Desconocido';
   }
+
   return (
     <SafeAreaView style={styles.container}>
         <ScreenHeader title="Inventario" navigation={navigation}/>
@@ -114,6 +142,34 @@ const StockScreen = ({  }) => {
             />
           ))}
         </Picker>
+      </View>
+      
+      <Text style={styles.filterLabel}>Filtrar por tipo de artículo:</Text>
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={selectedType}
+          onValueChange={(itemValue) => {
+            setSelectedType(itemValue)
+          }}
+          style={styles.picker}
+        >
+          {types.map((type) => (
+            <Picker.Item
+              key={type.tipo}
+              label={type.nombre}
+              value={type.tipo}
+            />
+          ))}
+        </Picker>
+      </View>
+
+      <View style={styles.switchContainer}>
+        <Text style={styles.filterLabel}>Filtrar por bajo stock:</Text>
+        <Switch
+          value={lowStock}
+          onValueChange={setLowStock}
+          style={styles.switch}
+        />
       </View>
 
       {/* Tabla de inventario */}
@@ -161,10 +217,10 @@ const StockScreen = ({  }) => {
               <Text style={styles.modalDetail}>Precio total: U$S {selectedProd.precio * selectedProd.cantidad}</Text>
               <Text style={styles.modalDetail}>Depósito: {getNombreDepositos(selectedProd.codigo_deposito)}</Text>
               <View style={styles.modalButtons}>
-                <TouchableOpacity style={styles.modalButton} onPress={() => {}}>
+                <TouchableOpacity style={styles.modalButton} onPress={navigateToMove}>
                   <Text style={styles.modalButtonText}>Mover</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.modalButton} onPress={() => {}}>
+                <TouchableOpacity style={styles.modalButton} onPress={navigateToEdit}>
                   <Text style={styles.modalButtonText}>Modificar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.modalButton} onPress={() => {setModalVisible(false)}}>
@@ -196,16 +252,17 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 16,
     marginHorizontal: 10,
-    marginTop: 10,
+    marginTop: 5,
     color: '#4CAF50',
     fontWeight: 'bold',
   },
   searchInput: {
-    height: 40,
     backgroundColor: '#FFF',
-    borderRadius: 20,
+    borderRadius: 10,
+    height: 40,
     paddingHorizontal: 15,
-    margin: 10,
+    margin: 5,
+    marginHorizontal: 10,
     fontSize: 16,
     color: '#333',
   },
@@ -213,7 +270,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     borderRadius: 10,
     marginHorizontal: 10,
-    marginBottom: 15,
+    marginBottom: 10,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
@@ -224,6 +281,13 @@ const styles = StyleSheet.create({
   picker: {
     height: 50,
     width: '100%',
+  },
+  switchContainer:{
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  switch:{
+    transform: [{ scale: 1 }],
   },
   tableContainer: {
     paddingHorizontal: 10,
