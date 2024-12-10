@@ -43,7 +43,7 @@ const ManageSuppliersScreen = () => {
   // Función para eliminar un producto
   const deleteSupplier = async (cuit) => {
     try{
-        await API.delete(`api/proveedores/id`);
+        await API.delete(`api/proveedores/${cuit}`);
         setSuppliers((prevData) => prevData.filter((proveedor) => proveedor.cuitProveedor !== cuit));
         Alert.alert('Éxito', 'Proveedor eliminado correctamente');
         fetchSuppliers(); //Cargamos nuevamente la tabla después de eliminar un producto

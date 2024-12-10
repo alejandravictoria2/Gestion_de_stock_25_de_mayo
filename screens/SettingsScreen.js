@@ -49,13 +49,14 @@ const styles = StyleSheet.create({
   },
   optionButton:{
     padding: 15,
-    backgroundColor: '#C8E6C9',
+    backgroundColor: '#4CAF50',
     borderRadius: 8,
     marginBottom: 15,
   },
   optionText: {
     fontSize: 18,
-    color: '#000',
+    fontWeight: 'bold',
+    color: '#FFF',
   },
 });
 

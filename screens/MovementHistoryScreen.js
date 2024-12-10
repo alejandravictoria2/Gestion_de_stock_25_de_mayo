@@ -11,6 +11,7 @@ const MovementHistoryScreen = ({}) => {
   const [movements, setMovements] = useState([]);
   const [filteredMovements, setFilteredMovements] = useState([]);
   const [deposits, setDeposits] = useState([]);
+  const [stock, setStock] = useState([]);
   const [users, setUsers] = useState([]);
   const [filter, setFilter] = useState('Todos');
   const [selectedMovement, setSelectedMovement] = useState(null);
@@ -20,6 +21,7 @@ const MovementHistoryScreen = ({}) => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchMovimientos();
       fetchDeposits();
+      fetchStock();
     });
     return unsubscribe; // Limpiar el listener cuando el componente se desmonte
   }, [navigation]);
@@ -52,10 +54,26 @@ const MovementHistoryScreen = ({}) => {
     }
   };
 
+  // Obtenemos la lista de productos
+  const fetchStock = async () =>{
+    try{
+      const response = await API.get('/api/stock');
+      setStock(response.data);
+    }catch(error){
+      Alert.alert('Error', 'No se obtuvo la lista de articulos');
+    }
+  };
+
   // Obtener el nombre del deposito para cada producto
   const getNombreDepositos = (codigo_deposito) => {
     const deposito = deposits.find(dep => dep.codigo_deposito === codigo_deposito);
     return deposito ? deposito.nombre : 'Desconocido';
+  }
+
+  // Obtener el nombre del producto
+  const getNombreStock = (idProducto) => {
+    const producto = stock.find(prod => prod.id_producto === idProducto);
+    return producto ? producto.nombre : 'Desconocido';
   }
 
   // Filtrar movimientos
@@ -161,7 +179,7 @@ const MovementHistoryScreen = ({}) => {
                     </View>
                     {(selectedMovement.detalleMovimientos || []).map((detalle) => (
                       <View key={detalle.idDetalle} style={styles.detalleRow}>
-                        <Text style={styles.detalleCell}>{detalle.idProducto}</Text>
+                        <Text style={styles.detalleCell}>{getNombreStock(detalle.idProducto)}</Text>
                         <Text style={styles.detalleCell}>{detalle.cantidad}</Text>
                         <Text style={styles.detalleCell}>{'U$S ' + detalle.precioTotal.toFixed(2)}</Text>
                       </View>

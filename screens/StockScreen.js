@@ -173,15 +173,14 @@ const StockScreen = ({  }) => {
       </View>
 
       {/* Tabla de inventario */}
+      <View style={styles.tableHeaderRow}>
+       <Text style={styles.tableHeader}>Producto</Text>
+        <Text style={styles.tableHeader}>Cantidad</Text>
+        <Text style={styles.tableHeader}>Tipo</Text>
+        <Text style={styles.tableHeader}>Precio</Text>
+        <Text style={styles.tableHeader}>Depósito</Text>
+      </View>
       <ScrollView style={styles.tableContainer}>
-        <View style={styles.tableHeaderRow}>
-          <Text style={styles.tableHeader}>Producto</Text>
-          <Text style={styles.tableHeader}>Cantidad</Text>
-          <Text style={styles.tableHeader}>Tipo</Text>
-          <Text style={styles.tableHeader}>Precio</Text>
-          <Text style={styles.tableHeader}>Depósito</Text>
-        </View>
-
         {filteredData.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>Lista de productos no disponible</Text>
@@ -291,11 +290,11 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     paddingHorizontal: 10,
-    marginTop:10,
   },
   tableHeaderRow: {
     flexDirection: 'row',
     backgroundColor: '#4CAF50',
+    marginHorizontal:10,
     padding: 10,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
