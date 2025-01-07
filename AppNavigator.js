@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import WelcomeScreen from './screens/WelcomeScreen';
@@ -19,11 +19,36 @@ import StatisticsScreen from './screens/StatisticsScreen';
 import CompraScreen from './screens/CompraScreen';
 import MovementHistoryScreen from './screens/MovementHistoryScreen';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const AppNavigator = () => {
+  const [cargo, setCargo] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try{
+        const token = await AsyncStorage.getItem('token');
+
+        if(token){
+          const userData = await AsyncStorage.getItem('user');
+          if(userData){
+            const {cargo} = JSON.parse(userData);
+            setCargo(cargo);
+            setIsAuthenticated(true);
+          }
+        }
+        console.log("Cargo obtenido:",cargo);
+      } catch(error){
+        console.error('Error al obtener el cargo del usuario', error);
+      }
+    };
+    fetchUserData();
+  }, [isAuthenticated]);
+
   return (
     <Stack.Navigator initialRouteName="Login">
       {/* Pantalla de Bienvenida */}
@@ -120,14 +145,15 @@ const AppNavigator = () => {
       {/* Pantalla Principal */}
       <Stack.Screen
         name="MainApp"
-        component={MainTabNavigator}
         options={{ headerShown: false }}
-      />
+      >
+        {() => <MainTabNavigator cargo={cargo} />}
+      </Stack.Screen>
     </Stack.Navigator>
   );
 };
 
-const MainTabNavigator = () => (
+const MainTabNavigator = ({cargo}) => (
   <Tab.Navigator
     initialRouteName="Inicio"
     screenOptions={({ route }) => ({
@@ -163,7 +189,9 @@ const MainTabNavigator = () => (
     <Tab.Screen name="Inicio" component={StatisticsScreen} />
     <Tab.Screen name="Inventario" component={StockScreen} />
     <Tab.Screen name="Movimientos" component={MovementHistoryScreen} />
-    <Tab.Screen name="Compras" component={CompraScreen} />
+    {cargo === 'ADMIN' &&(
+      <Tab.Screen name="Compras" component={CompraScreen} />
+    )}
   </Tab.Navigator>
 );
 

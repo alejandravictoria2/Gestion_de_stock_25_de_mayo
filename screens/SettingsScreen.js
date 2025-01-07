@@ -1,9 +1,44 @@
 // screens/SettingsScreen.js
 import React, { useState } from 'react';
-import { View, Text, Button, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import API from '../src/api/axios';
+import { BottomTabBar } from '@react-navigation/bottom-tabs';
 
 const SettingsScreen = ({ navigation }) => {
   const [isAdmin, setIsAdmin] = useState(true); // Suponemos que el usuario es administrador
+
+  const handleLogout = async () => {
+    try {
+      const storedToken = await AsyncStorage.getItem('token');
+      if(storedToken){
+        const token = storedToken.startsWith('Bearer ') ? storedToken : `Bearer ${storedToken}`;
+        const response = await API.post('/api/auth/logout',
+          {},
+          {
+            headers: {
+              Authorization: token.trim(),
+            },
+          }
+        );
+        
+        if(response.status===200){
+          //Logout exitoso, borrar token
+          //await  EncryptedStorage.clear();
+          await AsyncStorage.removeItem('token');
+          Alert.alert('Cerrar sesión', response.data);
+          navigation.navigate('Login');
+        } else{
+          Alert.alert('Error', 'No se encontró token de sesión');
+        }
+      } else{
+        Alert.alert('Error', 'No se encontró token de sesión');
+      }
+    } catch(error){
+      console.error('Error al cerrar sesión: ', error);
+      Alert.alert('Error', 'No se pudo cerrar sesión');
+    }
+  };
 
   const handleManageRoles = () => {
     if (isAdmin) {
@@ -23,6 +58,9 @@ const SettingsScreen = ({ navigation }) => {
       </TouchableOpacity>
       <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('ManageSuppliers')}>
         <Text style={styles.optionText}>Gestion de proveedores</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.logOutButton} onPress={handleLogout}>
+        <Text style={styles.optionText}>Cerrar sesión</Text>
       </TouchableOpacity>
     </View>
   );
@@ -50,6 +88,12 @@ const styles = StyleSheet.create({
   optionButton:{
     padding: 15,
     backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  logOutButton:{
+    padding: 15,
+    backgroundColor: '#FF0000',
     borderRadius: 8,
     marginBottom: 15,
   },

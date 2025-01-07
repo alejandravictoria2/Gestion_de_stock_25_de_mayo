@@ -23,7 +23,7 @@ const ManageSuppliersScreen = () => {
         setSuppliers([]);
       }
     }catch(error){
-      Alert.alert('Error', 'No se pudo cargar el listado de usuarios');
+      Alert.alert('Error', 'No se pudo cargar el listado de proveedores');
       setSuppliers([]);
     }
   };

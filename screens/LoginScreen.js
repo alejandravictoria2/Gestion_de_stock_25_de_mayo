@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,19 +9,74 @@ import {
   Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import API from '../src/api/axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ActivityIndicator } from 'react-native-web';
 
 const LoginScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
-    const hardcodedUsername = 'admin';
-    const hardcodedPassword = '1234';
+  /*useEffect(() => {
+    const checkToken = async () => {
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        try {
+          const response = await API.get('/api/auth/verify-token', {
+            headers: { Authorization: Bearer ${token} },
+          });
+          if (response.status === 200) {
+            navigation.navigate('MainApp');
+          }
+        } catch (error) {
+          console.error('Error al validar el token:', error);
+          // Elimina el token si es inválido
+          await AsyncStorage.removeItem('token');
+        }
+      }
+    };
+    checkToken();
+  }, []);*/
 
-    if (username === hardcodedUsername && password === hardcodedPassword) {
-      navigation.navigate('MainApp');
-    } else {
-      Alert.alert('Error', 'Usuario o contraseña incorrectos');
+  const handleLogin = async () => {
+    if(!username || !password){
+      Alert.alert('Error', 'Por favor, complete los campos');
+      return;
+    }
+
+    const payload = { legajo: parseInt(username), pass: password };
+
+    try {
+      const response = await API.post('/api/auth/login', payload, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.status === 200) {
+        const data = response.data;
+        if (data.token) {
+          await AsyncStorage.setItem('token',data.token.trim());
+          await AsyncStorage.setItem('user', JSON.stringify({legajo:data.legajo, cargo:data.cargo}));
+          navigation.navigate('MainApp');
+        }
+        else{
+          Alert.alert('Error', 'No se recibió un token de autenticación');
+        }
+      } else {
+        Alert.alert('Error', 'Usuario o contraseña incorrectos');
+      }
+    } catch (error) {
+      console.error('Error en la solicitud:', error);
+      if (error.response) {
+        Alert.alert(
+          'Error',
+          error.response.data.message || 'Usuario o contraseña incorrectos'
+        );
+      } else {
+        Alert.alert(
+          'Error',
+          'No se pudo conectar con el servidor. Inténtalo de nuevo.'
+        );
+      }
     }
   };
 
@@ -57,6 +112,7 @@ const LoginScreen = ({ navigation }) => {
         />
       </View>
 
+      {/*Boton inicio de sesión y barra de carga*/}
       <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
         <Text style={styles.loginButtonText}>Iniciar Sesión</Text>
       </TouchableOpacity>
@@ -142,12 +198,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#4CAF50',
     marginTop: 15,
-    textDecorationLine: 'underline',
-  },
-  registerText: {
-    fontSize: 16,
-    color: '#4CAF50',
-    marginTop: 10,
     textDecorationLine: 'underline',
   },
 });

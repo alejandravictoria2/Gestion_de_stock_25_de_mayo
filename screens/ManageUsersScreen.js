@@ -14,7 +14,7 @@ const ManageUsersScreen = ({ navigation }) => {
     fetchUsers(); //Obtenemos los datos del backend
   }, []);
 
-  const fetchUsers = async () =>{
+  const fetchUsers = async () => {
     try{
       const response = await API.get('/api/usuarios');
       if(Array.isArray(response.data)){
