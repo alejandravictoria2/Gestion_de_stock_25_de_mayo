@@ -10,33 +10,14 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import API from '../src/api/axios';
+import {useAuth} from '../AuthProvider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator } from 'react-native-web';
 
 const LoginScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-
-  /*useEffect(() => {
-    const checkToken = async () => {
-      const token = await AsyncStorage.getItem('token');
-      if (token) {
-        try {
-          const response = await API.get('/api/auth/verify-token', {
-            headers: { Authorization: Bearer ${token} },
-          });
-          if (response.status === 200) {
-            navigation.navigate('MainApp');
-          }
-        } catch (error) {
-          console.error('Error al validar el token:', error);
-          // Elimina el token si es inválido
-          await AsyncStorage.removeItem('token');
-        }
-      }
-    };
-    checkToken();
-  }, []);*/
+  const {login} = useAuth();
 
   const handleLogin = async () => {
     if(!username || !password){
@@ -54,8 +35,7 @@ const LoginScreen = ({ navigation }) => {
       if (response.status === 200) {
         const data = response.data;
         if (data.token) {
-          await AsyncStorage.setItem('token',data.token.trim());
-          await AsyncStorage.setItem('user', JSON.stringify({legajo:data.legajo, cargo:data.cargo}));
+          await login(data.token.trim(), {legajo: data.legajo, cargo: data.cargo});
           navigation.navigate('MainApp');
         }
         else{

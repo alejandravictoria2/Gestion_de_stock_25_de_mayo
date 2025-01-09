@@ -3,41 +3,42 @@ import React, { useState } from 'react';
 import { View, Text, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import API from '../src/api/axios';
+import {useAuth} from '../AuthProvider';
 import { BottomTabBar } from '@react-navigation/bottom-tabs';
+import { ActivityIndicator } from 'react-native-web';
 
 const SettingsScreen = ({ navigation }) => {
   const [isAdmin, setIsAdmin] = useState(true); // Suponemos que el usuario es administrador
+  const {logout} = useAuth();
+  const [isLogginngOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
-    try {
-      const storedToken = await AsyncStorage.getItem('token');
-      if(storedToken){
-        const token = storedToken.startsWith('Bearer ') ? storedToken : `Bearer ${storedToken}`;
-        const response = await API.post('/api/auth/logout',
-          {},
-          {
-            headers: {
-              Authorization: token.trim(),
-            },
-          }
-        );
-        
-        if(response.status===200){
-          //Logout exitoso, borrar token
-          //await  EncryptedStorage.clear();
-          await AsyncStorage.removeItem('token');
-          Alert.alert('Cerrar sesión', response.data);
-          navigation.navigate('Login');
-        } else{
-          Alert.alert('Error', 'No se encontró token de sesión');
-        }
-      } else{
-        Alert.alert('Error', 'No se encontró token de sesión');
-      }
-    } catch(error){
-      console.error('Error al cerrar sesión: ', error);
-      Alert.alert('Error', 'No se pudo cerrar sesión');
-    }
+    Alert.alert(
+      'Cerrar sesión',
+      '¿Estás seguro de que quieres cerrar sesión?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Cerrar sesión',
+          style: 'destructive',
+          onPress: async () => {
+            try{
+              setIsLoggingOut(true);
+              await logout();
+              navigation.navigate('Login');
+            } catch(error){
+              console.error('Error al cerrar sesión', error);
+              Alert.alert('Error', 'No se pudo cerrar sesión');
+            } finally{
+              setIsLoggingOut(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleManageRoles = () => {
@@ -50,24 +51,40 @@ const SettingsScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('ManageUsers')}>
-        <Text style={styles.optionText}>Gestionar Usuarios</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('ManageLocations')}>
-        <Text style={styles.optionText}>Gestionar Depositos</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('ManageSuppliers')}>
-        <Text style={styles.optionText}>Gestion de proveedores</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.logOutButton} onPress={handleLogout}>
-        <Text style={styles.optionText}>Cerrar sesión</Text>
-      </TouchableOpacity>
+      <View>
+        <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('ManageUsers')}>
+          <Text style={styles.optionText}>Gestionar Usuarios</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('ManageLocations')}>
+          <Text style={styles.optionText}>Gestionar Depositos</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.optionButton} onPress={() => navigation.navigate('ManageSuppliers')}>
+          <Text style={styles.optionText}>Gestion de proveedores</Text>
+        </TouchableOpacity>
+      </View>
+      <View>
+        <TouchableOpacity style={[styles.logOutButton, isLogginngOut && styles.disableButton]}
+        onPress={handleLogout}
+        disabled={isLogginngOut}
+        >
+          {isLogginngOut ? (
+            <Text style={styles.optionText}>Cerrando sesión...</Text>
+          ) : (
+            <Text style={styles.optionText}>Cerrar sesión</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#E8F5E9',
+  },
+  logoutContainer: {
     flex: 1,
     padding: 20,
     backgroundColor: '#E8F5E9',
@@ -96,6 +113,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF0000',
     borderRadius: 8,
     marginBottom: 15,
+    alignItems: 'center',
+  },
+  disableButton:{
+    backgroundColor: "#D32F2F",
   },
   optionText: {
     fontSize: 18,

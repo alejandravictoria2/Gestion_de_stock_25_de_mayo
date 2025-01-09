@@ -20,50 +20,40 @@ import CompraScreen from './screens/CompraScreen';
 import MovementHistoryScreen from './screens/MovementHistoryScreen';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useAuth} from './AuthProvider';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 const AppNavigator = () => {
-  const [cargo, setCargo] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try{
-        const token = await AsyncStorage.getItem('token');
-
-        if(token){
-          const userData = await AsyncStorage.getItem('user');
-          if(userData){
-            const {cargo} = JSON.parse(userData);
-            setCargo(cargo);
-            setIsAuthenticated(true);
-          }
-        }
-        console.log("Cargo obtenido:",cargo);
-      } catch(error){
-        console.error('Error al obtener el cargo del usuario', error);
-      }
-    };
-    fetchUserData();
-  }, [isAuthenticated]);
+  const {user} = useAuth();
 
   return (
-    <Stack.Navigator initialRouteName="Login">
-      {/* Pantalla de Bienvenida */}
-      <Stack.Screen
-        name="Welcome"
-        component={WelcomeScreen}
-        options={{ headerShown: false }}
-      />
+    <Stack.Navigator initialRouteName={user ? 'MainApp' : 'Login'}>
+      {/* Pantalla para usuarios no autenticados */}
+      {!user && (
+        <>
+          <Stack.Screen
+            name="Login"
+            component={LoginScreen}
+            options={{ title: 'Iniciar Sesión', headerShown: false }}
+          />
+          <Stack.Screen
+            name="Welcome"
+            component={WelcomeScreen}
+            options={{ headerShown: false }}
+          />
+        </>
+      )}
 
-      {/* Pantalla de Inicio de Sesión */}
-      <Stack.Screen
-        name="Login"
-        component={LoginScreen}
-        options={{ title: 'Iniciar Sesión' }}
-      />
+      {/* Pantallas principales para usuarios autenticados */}
+      {user && (
+        <Stack.Screen
+          name="MainApp"
+          component={MainTabNavigator}
+          options={{ headerShown: false }}
+        />
+      )}
 
       {/* Pantalla de Recuperación de Contraseña */}
       <Stack.Screen
@@ -141,58 +131,53 @@ const AppNavigator = () => {
         component={ManageSuppliersScreen}
         options={{ title: 'Gestión de Proveedores' }}
       />
-
-      {/* Pantalla Principal */}
-      <Stack.Screen
-        name="MainApp"
-        options={{ headerShown: false }}
-      >
-        {() => <MainTabNavigator cargo={cargo} />}
-      </Stack.Screen>
     </Stack.Navigator>
   );
 };
 
-const MainTabNavigator = ({cargo}) => (
-  <Tab.Navigator
-    initialRouteName="Inicio"
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ color, size = 28 }) => {
-        let iconName;
+const MainTabNavigator = () => {
+  const {user} = useAuth();
+  return(
+    <Tab.Navigator
+      initialRouteName="Inicio"
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ color, size = 28 }) => {
+          let iconName;
 
-        switch (route.name) {
-          case 'Inicio':
-            iconName = 'chart-line';
-            break;
-          case 'Inventario':
-            iconName = 'warehouse';
-            break;
-          case 'Movimientos':
-            iconName = 'history';
-            break;
-          case 'Compras':
-            iconName = 'cart';
-            break;
-          default:
-            iconName = 'circle';
-        }
+          switch (route.name) {
+            case 'Inicio':
+              iconName = 'chart-line';
+              break;
+            case 'Inventario':
+              iconName = 'warehouse';
+              break;
+            case 'Movimientos':
+              iconName = 'history';
+              break;
+            case 'Compras':
+              iconName = 'cart';
+              break;
+            default:
+              iconName = 'circle';
+          }
 
-        return <Icon name={iconName} size={size} color={color} />;
-      },
-      tabBarActiveTintColor: '#4CAF50',
-      tabBarInactiveTintColor: 'gray',
-      tabBarStyle: { height: 60 },
-      tabBarLabelStyle: { fontSize: 14 },
-      headerShown: false,
-    })}
-  >
-    <Tab.Screen name="Inicio" component={StatisticsScreen} />
-    <Tab.Screen name="Inventario" component={StockScreen} />
-    <Tab.Screen name="Movimientos" component={MovementHistoryScreen} />
-    {cargo === 'ADMIN' &&(
-      <Tab.Screen name="Compras" component={CompraScreen} />
-    )}
-  </Tab.Navigator>
-);
+          return <Icon name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: '#4CAF50',
+        tabBarInactiveTintColor: 'gray',
+        tabBarStyle: { height: 60 },
+        tabBarLabelStyle: { fontSize: 14 },
+        headerShown: false,
+      })}
+    >
+      <Tab.Screen name="Inicio" component={StatisticsScreen} />
+      <Tab.Screen name="Inventario" component={StockScreen} />
+      <Tab.Screen name="Movimientos" component={MovementHistoryScreen} />
+      {user?.cargo === 'ADMIN' &&(
+        <Tab.Screen name="Compras" component={CompraScreen} />
+      )}
+    </Tab.Navigator>
+  );
+};
 
 export default AppNavigator;

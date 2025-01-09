@@ -24,4 +24,16 @@ API.interceptors.request.use(
     }
 );
 
+API.interceptors.response.use(
+    response => response,
+    async(error) => {
+        if(error.response && error.response.status === 401){
+            await AsyncStorage.clear();
+            Alert.alert('Sesión expirada', 'Por favor, inicia sesión de nuevo');
+        }
+
+        return Promise.reject(error);
+    }
+);
+
 export default API;
